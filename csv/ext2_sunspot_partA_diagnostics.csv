@@ -1,0 +1,3 @@
+"Residual_Type","Ljung_Box_Q","P_Value","ACF_Lag1","Status"
+"Raw Out-of-Fold (Before Filtering)",160.93,"0.00e+00",0.568,"REJECTED (Correlated, Violates A3)"
+"Pre-Whitened (After Filtering)",6.8,"0.236",0.079,"PASSED (White Noise Restored, Satisfies A3)"

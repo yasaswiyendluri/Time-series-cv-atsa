@@ -1,0 +1,17 @@
+# RStudio and environment cache
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Editor settings
+.vscode/
+.idea/
+
+# OS temporary files
+Thumbs.db
+.DS_Store
+
+# Temporary scratch and test files
+test.html
+test.pdf

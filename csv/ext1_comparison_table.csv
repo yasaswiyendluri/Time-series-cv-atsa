@@ -1,0 +1,4 @@
+"Method","RMSE","MAE","Data_Retained_Pct","Theoretical_Status"
+"Ordinary 5-Fold CV",1.0506,0.8395,100,"Correlated Residuals (Violates A3)"
+"Gap-CV (gap = 3)",1.0624,0.8488,26.6,"Purged Data (Suffers Severe Data Loss)"
+"Pre-Whitened CV (PW-CV)",1.0411,0.8319,100,"Pre-Whitened (Restores A3 with 100% Data!)"

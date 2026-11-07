@@ -1,0 +1,3 @@
+"Selection","p","Size","Decay","RMSE_out_set"
+"CV",2,14,0.05,2.558
+"OOS",3,13,0.05,2.626

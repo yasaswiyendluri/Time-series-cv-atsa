@@ -1,0 +1,4 @@
+"Method","RMSE","MAE","Data_Retained_Pct"
+"Ordinary 5-Fold CV",2.9696,2.4294,100
+"Gap-CV (gap = 3)",3.0003,2.4792,27
+"Pre-Whitened CV (PW-CV)",2.9356,2.4015,100

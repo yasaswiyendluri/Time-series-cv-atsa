@@ -1,0 +1,16 @@
+"Horizon","Method","MAPAE"
+"h = 1","5-Fold CV",9.46
+"h = 1","Purged Gap-CV",9.46
+"h = 1","PW-CV (Ours)",8.02
+"h = 1","Rolling-Origin",16.02
+"h = 1","Static OOS",8.93
+"h = 3","5-Fold CV",10.1
+"h = 3","Purged Gap-CV",9.53
+"h = 3","PW-CV (Ours)",11.5
+"h = 3","Rolling-Origin",12.06
+"h = 3","Static OOS",13.74
+"h = 6","5-Fold CV",9.89
+"h = 6","Purged Gap-CV",108.92
+"h = 6","PW-CV (Ours)",12.15
+"h = 6","Rolling-Origin",16.27
+"h = 6","Static OOS",6.18
