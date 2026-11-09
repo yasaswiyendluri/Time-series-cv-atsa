@@ -1,7 +1,5 @@
-# ==============================================================================
 # DA 3021: APPLIED TIME SERIES ANALYSIS — COURSEWORK PROJECT
 # PAPER REPLICATION (TABLES 1, 2, 3) & NOVEL RESEARCH EXTENSIONS
-# ==============================================================================
 # Original Research Paper:
 #   Bergmeir, C., Hyndman, R. J., & Koo, B. (2018), "A note on the validity of 
 #   cross-validation for evaluating autoregressive time series prediction", 
@@ -12,17 +10,16 @@
 #   2. Nayakwadi Saharshini
 #   3. Nansy Veronika
 #   4. Shunkari Sharanya
-# ==============================================================================
-#
+
 # Master Architecture Overview:
-# ------------------------------------------------------------------------------
+
 # PART 1: PAPER REPLICATION — TABLE 1 (Linear Autoregressions: AR3, MA1, AR12)
 # PART 2: PAPER REPLICATION — TABLE 2 (Non-Linear NNAR Neural Networks)
 # PART 3: PAPER REPLICATION — TABLE 3 (Yearly Sunspots 1700-1988 & 1,560 Grid)
 # PART 4: NOVEL EXTENSION 1 — PRE-WHITENED CROSS-VALIDATION (PW-CV at h = 1)
 # PART 5: NOVEL EXTENSION 2 — MULTI-HORIZON FORECASTING ARENA (h in {1, 2, 4, 6})
 # PART 6: NOVEL EXTENSION 3 — CONTINUOUS JOINT SELECTION CRITERION (J_lambda)
-# ==============================================================================
+
 
 options(scipen = 999)
 set.seed(42)
@@ -61,14 +58,10 @@ fit_predict_lm <- function(train_df, test_df, order) {
   suppressWarnings(as.numeric(predict(fit, newdata = test_df)))
 }
 
-
-# ==============================================================================
 # PART 1: PAPER REPLICATION — TABLE 1 (LINEAR MODELS)
-# ==============================================================================
+
 run_table1_replication <- function(csv_dir) {
-  cat("\n========================================================================\n")
   cat("  PART 1: REPLICATION OF TABLE 1 (LINEAR AUTOREGRESSIONS, 1,000 TRIALS)\n")
-  cat("========================================================================\n")
   cat("DGPs: Stationary AR(3), Invertible MA(1), Seasonal AR(12)\n")
   cat("Candidate orders: AR(1) to AR(5) | Methods: 5-Fold CV, LOOCV, nonDepCV, OOS\n\n")
   
@@ -100,13 +93,11 @@ run_table1_replication <- function(csv_dir) {
 }
 
 
-# ==============================================================================
+
 # PART 2: PAPER REPLICATION — TABLE 2 (NEURAL NETWORKS NNAR)
-# ==============================================================================
+
 run_table2_replication <- function(csv_dir) {
-  cat("\n========================================================================\n")
   cat("  PART 2: REPLICATION OF TABLE 2 (NON-LINEAR NNAR, 1,000 TRIALS)\n")
-  cat("========================================================================\n")
   cat("Model: Feedforward MLP (nnet, 5 hidden units, decay 0.00316, BFGS optimizer)\n\n")
   
   t2_file <- file.path(csv_dir, "table2_results.csv")
@@ -136,14 +127,9 @@ run_table2_replication <- function(csv_dir) {
   }
 }
 
-
-# ==============================================================================
 # PART 3: PAPER REPLICATION — TABLE 3 (YEARLY SUNSPOTS 1700-1988)
-# ==============================================================================
 run_table3_replication <- function(csv_dir) {
-  cat("\n========================================================================\n")
   cat("  PART 3: REPLICATION OF TABLE 3 (YEARLY SUNSPOTS 1,560 CONFIG GRID)\n")
-  cat("========================================================================\n")
   cat("Dataset: 289 points (1700-1988), Tong (1993) transform: y = 2*(sqrt(1+x)-1)\n")
   cat("Grid: 20 lags x 13 sizes x 6 decays = 1,560 configs | In-Set: 203, Out-Set: 86\n\n")
   
@@ -159,13 +145,10 @@ run_table3_replication <- function(csv_dir) {
 }
 
 
-# ==============================================================================
 # PART 4: NOVEL EXTENSION 1 — PRE-WHITENED CROSS-VALIDATION (PW-CV)
-# ==============================================================================
+
 run_extension1 <- function(csv_dir) {
-  cat("\n========================================================================\n")
   cat("  PART 4: NOVEL EXTENSION 1 — PRE-WHITENED CROSS-VALIDATION (PW-CV)\n")
-  cat("========================================================================\n")
   cat("Problem: Model misspecification breaks Assumption A3 (white noise errors).\n")
   cat("Solution: In-fold causal AR(P) whitening filter via Burg algorithm + AIC.\n\n")
   
@@ -187,14 +170,9 @@ run_extension1 <- function(csv_dir) {
   }
 }
 
-
-# ==============================================================================
 # PART 5: NOVEL EXTENSION 2 — MULTI-HORIZON ARENA (h in {1, 2, 4, 6})
-# ==============================================================================
 run_extension2 <- function(csv_dir) {
-  cat("\n========================================================================\n")
   cat("  PART 5: NOVEL EXTENSION 2 — MULTI-HORIZON FORECASTING ARENA\n")
-  cat("========================================================================\n")
   cat("Theoretical Insight: Multi-step forecast errors mechanically overlap by (h-1),\n")
   cat("                     forming an MA(h-1) process (Lemma 1). Assumption A3 breaks!\n\n")
   
@@ -218,14 +196,9 @@ run_extension2 <- function(csv_dir) {
   }
 }
 
-
-# ==============================================================================
 # PART 6: NOVEL EXTENSION 3 — CONTINUOUS JOINT SELECTION CRITERION (J_lambda)
-# ==============================================================================
 run_extension3 <- function(csv_dir) {
-  cat("\n========================================================================\n")
   cat("  PART 6: NOVEL EXTENSION 3 — CONTINUOUS JOINT CRITERION (J_lambda)\n")
-  cat("========================================================================\n")
   cat("Objective: J_lambda = CV_RMSE + lambda * max(0, -log10(p_LB) - 1.301)\n")
   cat("Replaces the paper's discrete 5% cutoff with a smooth Pareto frontier.\n\n")
   
@@ -238,17 +211,11 @@ run_extension3 <- function(csv_dir) {
     cat("           paper baseline (2.558) and static OOS holdout splitting (2.626)!\n")
   }
 }
-
-
-# ==============================================================================
 # MAIN CONTROLLER: RUN EVERYTHING
-# ==============================================================================
 main <- function() {
-  cat("########################################################################\n")
   cat("  DA 3021: APPLIED TIME SERIES ANALYSIS — COURSEWORK PROJECT           \n")
   cat("  Replication of Bergmeir, Hyndman, & Koo (2018) + Novel Extensions     \n")
   cat("  Team: Y. Yasaswi, N. Saharshini, N. Veronika, S. Sharanya             \n")
-  cat("########################################################################\n")
   
   # 1. Paper Replication (Tables 1, 2, 3)
   run_table1_replication(csv_dir)
@@ -260,9 +227,7 @@ main <- function() {
   run_extension2(csv_dir)
   run_extension3(csv_dir)
   
-  cat("\n########################################################################\n")
   cat("  ALL REPLICATION TABLES & NOVEL EXTENSIONS DISPLAYED SUCCESSFULLY!     \n")
-  cat("########################################################################\n")
 }
 
 # Run full project pipeline
