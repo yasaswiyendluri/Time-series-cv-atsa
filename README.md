@@ -138,7 +138,7 @@ Bergmeir, C., Hyndman, R. J., & Koo, B. (2018). A note on the validity of cross-
 
 | Name | Roll no. |
 |---|---|
-| Nancy Vernica | 240150020 |
+| Nansy Veronika | 240150020 |
 | Nayakwadi Saharshini | 240150021 |
 | Sunkari Sharanya | 240150036 |
 | Yendluri Yasaswi | 240150040 |
