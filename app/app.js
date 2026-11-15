@@ -1543,19 +1543,19 @@ class FoldStudioCanvas {
     if (testStatusEl) {
       if (this.method === "standard") {
         testStatusEl.innerHTML = `<span class="badge badge-primary">Standard 5-Fold (Theorem 1 Holds Asymptotically)</span>`;
-        if (warningEl) warningEl.innerHTML = `ℹ️ <strong>Bergmeir et al. (2018):</strong> Interleaved folds preserve full sample variance. Because error process is white noise ($A3$), time ordering is not violated.`;
+        if (warningEl) warningEl.innerHTML = `<span class="inline-block mr-1.5">ℹ️</span><strong>Bergmeir et al. (2018):</strong> Interleaved folds preserve full sample variance. Because error process is white noise (Assumption <strong>A3</strong>), time ordering is not violated.`;
       } else if (this.method === "blocked") {
         testStatusEl.innerHTML = `<span class="badge badge-amber">Blocked CV (High Variance, Severe Positive Bias)</span>`;
-        if (warningEl) warningEl.innerHTML = `⚠️ <strong>Non-Dependent Blocked CV Trap:</strong> Contiguous chunks artificially reduce training sample length, producing heavy positive bias ($+11.1\%$ to $+28.5\%$) in Table 1!`;
+        if (warningEl) warningEl.innerHTML = `<span class="inline-block mr-1.5">⚠️</span><strong>Non-Dependent Blocked CV Trap:</strong> Contiguous chunks artificially reduce training sample length, producing heavy positive bias (+11.1% to +28.5%) in Table 1!`;
       } else if (this.method === "gap") {
-        testStatusEl.innerHTML = `<span class="badge badge-rose">Gap-CV (Purged ${100 - pct}\% Data)</span>`;
-        if (warningEl) warningEl.innerHTML = `⚠️ <strong>Rank Deficiency Hazard:</strong> Dropping observations around test points destroys degrees of freedom. Explodes to $108.9\%$ error at $h=6$!`;
+        testStatusEl.innerHTML = `<span class="badge badge-rose">Gap-CV (Purged ${100 - pct}% Data)</span>`;
+        if (warningEl) warningEl.innerHTML = `<span class="inline-block mr-1.5">⚠️</span><strong>Rank Deficiency Hazard:</strong> Dropping observations around test points destroys degrees of freedom. Explodes to 108.9% error at $h=6$!`;
       } else if (this.method === "rolling") {
         testStatusEl.innerHTML = `<span class="badge badge-cyan">Rolling Origin (Sequential Horizon Windowing)</span>`;
-        if (warningEl) warningEl.innerHTML = `ℹ️ <strong>Rolling Origin Evaluation:</strong> Strictly forward training. Computationally expensive and high variance during early small windows.`;
+        if (warningEl) warningEl.innerHTML = `<span class="inline-block mr-1.5">ℹ️</span><strong>Rolling Origin Evaluation:</strong> Strictly forward training. Computationally expensive and high variance during early small windows.`;
       } else if (this.method === "pw") {
         testStatusEl.innerHTML = `<span class="badge badge-emerald">Pre-Whitened CV (100% Data + A3 Restored)</span>`;
-        if (warningEl) warningEl.innerHTML = `✅ <strong>Novel In-Fold Inversion:</strong> Applies in-fold causal AR($P$) operator $\\hat{\\Phi}(B)$. Restores Ljung-Box $p = 0.4778$ with zero data loss!`;
+        if (warningEl) warningEl.innerHTML = `<span class="inline-block mr-1.5">✅</span><strong>Novel In-Fold Inversion:</strong> Applies in-fold causal AR($P$) operator $\\hat{\\Phi}(B)$. Restores Ljung-Box $p = 0.4778$ with zero data loss!`;
       }
       if (window.renderMathInElement) renderMath(warningEl);
     }
@@ -2027,6 +2027,12 @@ class ChronosApp {
     if (tabId === "arena") this.updateArenaView();
     if (tabId === "joint") this.updateJointView();
     if (tabId === "synthesis") this.updateSynthesisView();
+
+    const activeView = document.getElementById(`view-${tabId}`);
+    if (activeView) {
+      if (window.renderMathInElement) renderMath(activeView);
+      if (window.lucide) lucide.createIcons();
+    }
   }
 
   bindSoundToggle() {
