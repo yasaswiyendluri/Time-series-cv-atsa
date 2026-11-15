@@ -3,7 +3,7 @@
 A replication of **Bergmeir, Hyndman & Koo (2018)**, *"A note on the validity of cross-validation for evaluating autoregressive time series prediction"* (Computational Statistics & Data Analysis, 120, 70–83), extended with three ideas of our own and an interactive web app (**CHRONOS-CV**) for exploring every result.
 
 **Course project for DA 3041: Applied Time Series Analysis (Group 6)**  
-**Live app:** <https://da3021-time-series-cv.netlify.app>
+**Live app:** <https://da3041-time-series-cv.netlify.app>
 
 > **Core idea of the paper:** for purely autoregressive models, ordinary K-fold cross-validation is valid as long as the model residuals are uncorrelated. Blocked or "gap" CV is only needed when the model is misspecified.
 
@@ -57,7 +57,7 @@ CHRONOS-CV has seven tabs:
 
 **Run it**
 
-- Live: <https://da3021-time-series-cv.netlify.app>
+- Live: <https://da3041-time-series-cv.netlify.app>
 - Easiest locally: open `index.html` in a browser (on Windows, double-click `launch_app.bat`).
 - Or serve it locally: `python app/run_server.py` and visit <http://localhost:8000>.
 
