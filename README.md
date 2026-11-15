@@ -30,9 +30,11 @@ A replication of **Bergmeir, Hyndman & Koo (2018)**, *"A note on the validity of
 │   ├── style.css
 │   ├── run_server.py     # optional local server on port 8000
 │   └── launch_app.bat    # Windows shortcut to open the app
-├── rmd/analysis.Rmd     # full R Markdown analysis (tables, extensions, plots)
+├── rmd/
+│   ├── ATSA_project.Rmd  # paper replication (Tables 1 & 2, 1000 trials)
+│   └── analysis.Rmd      # report extensions (1,560 sunspot grid, PW-CV, multi-horizon, J_lambda)
 ├── scripts/complete_code.R  # plain-R version of the experiments
-├── csv/                  # all result tables produced by the R code (18 files)
+├── csv/                  # result tables produced by the R code (27 files)
 ├── images/               # all figures produced by the R code (9 files)
 ├── atsa_paper.pdf        # the paper being replicated
 ├── index.html            # redirects to app/index.html
@@ -101,6 +103,10 @@ Takeaway: PW-CV keeps all the data and does well at h = 1, but **no method wins 
 
 ## Reproducing the analysis
 
+### Note on the two R Markdown scripts:
+- **`rmd/ATSA_project.Rmd`:** Replicates the core paper simulation study (Table 1 and Table 2) with the full `n_trials = 1000` (for both linear autoregressions and MLP neural networks), generating `paper_table2.csv` through `paper_table9.csv`.
+- **`rmd/analysis.Rmd`:** Contains the extension code used in the submitted course report and supplementary material, including the complete 1,560-configuration Sunspot grid search (`sunspot_all_configs.csv`), the mathematical PW-CV filtering and rescaling (`ext1_comparison_table.csv`), the multi-horizon evaluations, and the $J_\lambda$ joint selection criterion ($20$ trials for exploratory runs). Note that the PW-CV and $J_\lambda$ in `ATSA_project.Rmd` represent an alternative exploratory formulation, whereas `rmd/analysis.Rmd` is the version described and analyzed in the report.
+
 **Requirements:** R (≥ 4.0) with the `nnet` package; `parallel` ships with base R. To knit the report you also need `rmarkdown` and `knitr` (and a LaTeX install for PDF output).
 
 ```r
@@ -110,9 +116,15 @@ install.packages(c("nnet", "rmarkdown", "knitr"))
 **Run it**
 
 ```r
-# from the repo root
+# From the repo root:
+
+# 1. Full 1000-trial paper replication:
+rmarkdown::render("rmd/ATSA_project.Rmd")
+
+# 2. Report extensions, 1560-model grid, and figures:
 rmarkdown::render("rmd/analysis.Rmd", output_format = "html_document")
-# or run the plain script
+
+# 3. Or run the plain script:
 source("scripts/complete_code.R")
 ```
 

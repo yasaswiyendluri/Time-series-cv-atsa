@@ -1,0 +1,16 @@
+"Horizon","Method","RMSE_MAPAE","RMSE_MPAE"
+"h = 1","5-fold CV",8.69,-0.013
+"h = 2","5-fold CV",8.99,0.023
+"h = 4","5-fold CV",13.28,0.012
+"h = 1","Purged Gap-CV",8.69,-0.013
+"h = 2","Purged Gap-CV",9.65,0.039
+"h = 4","Purged Gap-CV",19.14,0.188
+"h = 1","PW-CV (Ours)",8.84,-0.011
+"h = 2","PW-CV (Ours)",8.15,-0.003
+"h = 4","PW-CV (Ours)",13.08,-0.072
+"h = 1","Rolling-Origin",12.82,0.007
+"h = 2","Rolling-Origin",13.42,-0.008
+"h = 4","Rolling-Origin",14.82,-0.034
+"h = 1","Static OOS",11.72,-0.045
+"h = 2","Static OOS",12.95,0.05
+"h = 4","Static OOS",18.22,-0.01

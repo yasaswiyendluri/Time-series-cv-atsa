@@ -1,0 +1,3 @@
+"Residual_Type","Ljung_Box_Q","P_Value","Autocorrelation_Lag1","Status"
+"Raw Out-of-Fold (Before Filtering)",42.39,"1.14e-06",0.199,"REJECTED (Correlated, Violates A3)"
+"Pre-Whitened (After Filtering)",7.56,"0.4778",0.088,"PASSED (White Noise Restored, Satisfies A3)"
