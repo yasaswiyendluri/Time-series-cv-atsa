@@ -226,8 +226,10 @@ print_paper_table <- function(tab, digits = 3) {
  
 print_paper_table(table1)
  
-# Save both versions next to the script
-write.csv(table1, file.path(csv_dir, "table1_results.csv"), row.names = FALSE)
+# Save both versions next to the script (skip overwrite if 1000-trial file exists)
+if (!file.exists(file.path(csv_dir, "table1_results.csv"))) {
+  write.csv(table1, file.path(csv_dir, "table1_results.csv"), row.names = FALSE)
+}
 writeLines(capture.output(print_paper_table(table1)), "table1_paper_style.txt")
 
 ```
@@ -447,7 +449,9 @@ print_paper_table <- function(tab, digits = 3) {
 
 print_paper_table(table2)
 
-write.csv(table2, file.path(csv_dir, "table2_results.csv"), row.names = FALSE)
+if (!file.exists(file.path(csv_dir, "table2_results.csv"))) {
+  write.csv(table2, file.path(csv_dir, "table2_results.csv"), row.names = FALSE)
+}
 writeLines(capture.output(print_paper_table(table2)), "table2_paper_style.txt")
 ```
 

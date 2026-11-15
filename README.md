@@ -1,159 +1,181 @@
-# Cross-Validation for Autoregressive Time Series: Replication and Extensions
+# Cross-Validation for Autoregressive Time Series
 
-A replication of **Bergmeir, Hyndman & Koo (2018)**, *"A note on the validity of cross-validation for evaluating autoregressive time series prediction"* (Computational Statistics & Data Analysis, 120, 70–83), extended with three ideas of our own and an interactive web app (**CHRONOS-CV**) for exploring every result.
+**A replication and three extensions of Bergmeir, Hyndman & Koo (2018)**
 
-**Course project for DA 3041: Applied Time Series Analysis (Group 6)**  
+Course project for **DA 3041: Applied Time Series Analysis**, IIT Guwahati (Group 6)
+
 **Live app:** <https://da3041-time-series-cv.netlify.app>
-
-> **Core idea of the paper:** for purely autoregressive models, ordinary K-fold cross-validation is valid as long as the model residuals are uncorrelated. Blocked or "gap" CV is only needed when the model is misspecified.
 
 ---
 
+## The idea in one paragraph
+
+For time series, practitioners often avoid K-fold cross-validation (CV) because temporal dependencies between observations can lead to overly optimistic performance estimates. Instead, out-of-sample (OOS) evaluation is standard. However, Bergmeir, Hyndman & Koo (2018) demonstrated that for **purely autoregressive models**, standard K-fold CV remains asymptotically valid **provided the model errors are uncorrelated (Assumption A3)**. In this project, we replicate their empirical findings in R across linear and non-linear processes, and investigate what happens when uncorrelated error conditions break down through three novel extensions.
+
 ## Contents
 
-- [What's in this repo](#whats-in-this-repo)
-- [The interactive app](#the-interactive-app)
 - [What we did](#what-we-did)
-- [Key results](#key-results)
-- [Reproducing the analysis](#reproducing-the-analysis)
-- [Limitations (please read)](#limitations-please-read)
-- [Reference](#reference)
+- [Repository layout](#repository-layout)
+- [Where each report table comes from](#where-each-report-table-comes-from)
+- [Main results](#main-results)
+- [How to run the code](#how-to-run-the-code)
+- [The CHRONOS-CV app](#the-chronos-cv-app)
+- [Notes and limitations](#notes-and-limitations)
 - [Team](#team)
-
-## What's in this repo
-
-```
-.
-├── app/                  # CHRONOS-CV interactive web app (HTML + JS + CSS)
-│   ├── index.html
-│   ├── app.js
-│   ├── style.css
-│   ├── run_server.py     # optional local server on port 8000
-│   └── launch_app.bat    # Windows shortcut to open the app
-├── rmd/
-│   ├── ATSA_project.Rmd  # paper replication (Tables 1 & 2, 1000 trials)
-│   └── analysis.Rmd      # report extensions (1,560 sunspot grid, PW-CV, multi-horizon, J_lambda)
-├── scripts/complete_code.R  # plain-R version of the experiments
-├── csv/                  # result tables produced by the R code (27 files)
-├── images/               # all figures produced by the R code (9 files)
-├── atsa_paper.pdf        # the paper being replicated
-├── index.html            # redirects to app/index.html
-└── launch_app.bat        # Windows shortcut to open the app
-```
-
-(`complete_code.R` in the repo root is identical to `scripts/complete_code.R`.)
-
-## The interactive app
-
-CHRONOS-CV has seven tabs:
-
-| Tab | What you can do |
-|---|---|
-| **Studio** | Visualise how 5-fold CV, LOOCV, blocked/gap CV and OOS partition and purge a series |
-| **Linear** | Explore our reproduction of the paper's Table 1 (AR, MA and seasonal AR processes) |
-| **Neural** | Explore our reproduction of Table 2 (non-linear autoregressive neural networks) |
-| **Sunspots** | Yearly sunspots (1700–1988) and the 1,560-model grid search |
-| **Whiteness** | Test residual whiteness and see causal pre-whitening recover it |
-| **Arena** | Multi-horizon (h = 1…6) comparison of validation methods |
-| **Joint** | The continuous joint selection criterion J<sub>λ</sub> |
-
-**Run it**
-
-- Live: <https://da3041-time-series-cv.netlify.app>
-- Easiest locally: open `index.html` in a browser (on Windows, double-click `launch_app.bat`).
-- Or serve it locally: `python app/run_server.py` and visit <http://localhost:8000>.
-
-The app loads Tailwind, Chart.js, Lucide, KaTeX and Google Fonts from CDNs, so it needs an **internet connection** the first time.
+- [Reference](#reference)
 
 ## What we did
 
-**1. Replication.** We reproduce the paper's three experiments:
+**Replication of the paper**
 
-- **Table 1:** linear AR(3), MA(1) and seasonal AR(12) processes (series length 200), candidate models AR(1)–AR(5), comparing 5-fold CV, LOOCV, non-dependent CV (nonDepCV) and an OOS holdout.
-- **Table 2:** non-linear autoregressive neural networks (`nnet`) with resumable checkpointed runs.
-- **Table 3:** yearly sunspots, with a grid of 1,560 neural network configurations.
+| Experiment | Data | Models | Methods compared |
+|---|---|---|---|
+| **Linear study** | Simulated AR(3), MA(1), seasonal AR(12), length 200 | AR(1)–AR(5) | 5-fold CV, LOOCV, nonDepCV, OOS |
+| **Neural network study** | Same three processes | MLP (`nnet`), 5 hidden units | Same four methods |
+| **Sunspot study** | Yearly sunspots, 1700–1988 | 1560 MLP settings | CV vs OOS model selection |
 
-**2. Extensions (ours, beyond the paper).**
+Both simulation studies evaluate **1,000 Monte Carlo trials**, replicating the paper's benchmark scale.
 
-1. **Pre-Whitened CV (PW-CV):** instead of discarding rows near each test fold (gap-CV), keep all rows and filter the residuals so they are approximately uncorrelated.
-2. **Multi-horizon evaluation:** h = 1…6 with recursive vs. direct forecasts, compared across 5-fold CV, gap-CV, PW-CV, rolling-origin and static OOS.
-3. **Joint selection criterion J<sub>λ</sub>:** a continuous criterion that blends CV error with a residual-whiteness penalty.
+**Our three extensions**
 
-## Key results
+1. **Pre-Whitened CV (PW-CV):** Gap CV discards rows near test folds to remove temporal dependence. PW-CV retains 100% of observations and filters the residuals via causal in-fold autoregression and Yule–Walker rescaling.
+2. **Multi-Horizon Forecasting:** The paper examines one-step-ahead ($h = 1$) predictions only. We benchmark 5-fold CV, purged gap CV, PW-CV, rolling-origin, and static OOS across $h = 1, \dots, 6$, comparing direct vs. recursive forecasting.
+3. **Joint Selection Criterion J<sub>λ</sub>:** We replace the paper's rigid binary Ljung–Box hypothesis test cutoff with a continuous penalization score:  
+   $$J_\lambda(M) = \text{RMSE}_{\text{CV}}(M) \times \bigl(1 + \lambda(1 - p_{\text{LB}}(M))\bigr)$$
 
-Numbers below come straight from `csv/`.
+## Repository layout
 
-**Simulated ARMA process, h = 1 (`ext1_comparison_table.csv`)**
+```
+.
+├── atsa_report.pdf          # our main course project report
+├── atsa_supplementary.pdf   # our supplementary material (full proofs & extra runs)
+├── atsa_paper.pdf           # original paper being replicated (Bergmeir et al., 2018)
+├── rmd/
+│   ├── ATSA_project.Rmd     # 1000-trial simulations (report Tables 1, 3–8)
+│   └── analysis.Rmd         # sunspot 1560 grid, J_lambda, figures, supplementary results
+├── scripts/complete_code.R  # prints a summary of the saved results in csv/
+├── complete_code.R          # identical root shortcut to scripts/complete_code.R
+├── csv/                     # all result tables (27 files)
+├── images/                  # all figures (9 files)
+├── app/                     # CHRONOS-CV web app (HTML, JS, CSS)
+├── index.html               # opens the app
+└── launch_app.bat           # Windows shortcut to open the app
+```
 
-| Method | RMSE | Data retained |
-|---|---|---|
-| Ordinary 5-fold CV | 1.0506 | 100% |
-| Gap-CV (gap = 3) | 1.0624 | 26.6% |
-| PW-CV | 1.0411 | 100% |
+## Where each report table comes from
 
-**Sunspots, MAPAE % by horizon (`ext2_sunspot_partB_summary_mapae.csv`)**
+| Report Element | File in `csv/` or `images/` | Generated by | Scope / Trials |
+|---|---|---|---|
+| **Table 1:** Simulation replication | `table1_results.csv` (linear), `table2_results.csv` (MLP) | `rmd/ATSA_project.Rmd` | 1,000 trials |
+| **Table 2:** Sunspot model selection | `table3_results.csv`, `sunspot_all_configs.csv` | `rmd/analysis.Rmd` | Real series (1,560 configs) |
+| **Table 3:** PW-CV vs 5-fold and gap CV | `paper_table3.csv` | `rmd/ATSA_project.Rmd` | Benchmark runs ($h=1$) |
+| **Table 4:** Ljung–Box before/after whitening | `paper_table4.csv` | `rmd/ATSA_project.Rmd` | Benchmark runs |
+| **Table 5:** Multi-step Monte Carlo | `paper_table5.csv` | `rmd/ATSA_project.Rmd` | 1,000 trials |
+| **Table 6:** Direct vs recursive | `paper_table6.csv` | `rmd/ATSA_project.Rmd` | 1,000 trials |
+| **Table 7:** Multi-horizon with PW-CV | `paper_table7.csv` | `rmd/ATSA_project.Rmd` | 1,000 trials |
+| **Table 8:** Sunspots by horizon | `paper_table8.csv` | `rmd/ATSA_project.Rmd` | Real series ($h=1,3,6$) |
+| **Table 9:** J<sub>λ</sub> selection | `table_extension_joint_criterion.csv` | `rmd/analysis.Rmd` | Real series ($\lambda \in [0, 2]$) |
+| **Figure 1:** Sunspots series and ACF | `sunspot_acf_plot.png` | `rmd/analysis.Rmd` | Real series |
+| **Figure 2:** Residuals before/after whitening | `ext2_sunspot_partA_diagnostics.png` | `rmd/analysis.Rmd` | Real series |
+| **Figure 3:** Sunspot error gap by horizon | `ext2_sunspot_partB_multistep.png` | `rmd/analysis.Rmd` | Real series |
 
-| Horizon | 5-fold CV | Gap-CV | PW-CV | Rolling-origin | Static OOS |
-|---|---|---|---|---|---|
-| h = 1 | 9.46 | 9.46 | **8.02** | 16.02 | 8.93 |
-| h = 3 | 10.10 | **9.53** | 11.50 | 12.06 | 13.74 |
-| h = 6 | 9.89 | 108.92 | 12.15 | 16.27 | **6.18** |
+**Supplementary Material:** Uses `table1_results.csv` and `table2_results.csv` (all model orders 1–5), `sunspot_all_configs.csv` (1,560-setting scatter plot), `table_extension_prewhitened.csv`, `ext2_sunspot_partB_sunspot_results.csv`, and `future_work_extensions_plot.png` (from exploratory preliminary runs).
 
-Takeaway: PW-CV keeps all the data and does well at h = 1, but **no method wins at every horizon**.
+## Main results
 
-## Reproducing the analysis
+**1. CV is valid when model residuals are white noise** (Table 1, linear models, 3 lags, 1,000 trials)
 
-### Note on the two R Markdown scripts:
-- **`rmd/ATSA_project.Rmd`:** Replicates the core paper simulation study (Table 1 and Table 2) with the full `n_trials = 1000` (for both linear autoregressions and MLP neural networks), generating `paper_table2.csv` through `paper_table9.csv`.
-- **`rmd/analysis.Rmd`:** Contains the extension code used in the submitted course report and supplementary material, including the complete 1,560-configuration Sunspot grid search (`sunspot_all_configs.csv`), the mathematical PW-CV filtering and rescaling (`ext1_comparison_table.csv`), the multi-horizon evaluations, and the $J_\lambda$ joint selection criterion ($20$ trials for exploratory runs). Note that the PW-CV and $J_\lambda$ in `ATSA_project.Rmd` represent an alternative exploratory formulation, whereas `rmd/analysis.Rmd` is the version described and analyzed in the report.
+| Method | AR(3) MAPAE | MA(1) MAPAE | Seasonal AR(12) MAPAE |
+|---|---|---|---|
+| **5-fold CV** | **0.093** | 0.091 | 110.1 |
+| **LOOCV** | **0.092** | **0.089** | 110.5 |
+| **nonDepCV** | 0.279 | 0.245 | 215.1 |
+| **OOS** | 0.144 | 0.133 | 115.0 |
 
-**Requirements:** R (≥ 4.0) with the `nnet` package; `parallel` ships with base R. To knit the report you also need `rmarkdown` and `knitr` (and a LaTeX install for PDF output).
+*MAPAE (Mean Absolute Prediction Accuracy Error) measures distance to true out-of-sample error. On stationary AR and MA processes, standard 5-fold CV and LOOCV achieve the lowest error. When a 3-lag model is fitted to seasonal AR(12) data, Assumption A3 fails and all methods degrade.*
+
+**2. CV and OOS identify comparable sunspot neural networks** (Table 2):  
+Out of 1,560 network architectures, 679 pass the Ljung–Box diagnostic. The architecture selected by CV achieves out-set RMSE **2.558**, closely matching the model selected by OOS (**2.626**).
+
+**3. Multi-horizon forecasting exhibits no universal winner** (Table 8, sunspots, relative error gap %):
+
+| Method | h = 1 | h = 3 | h = 6 |
+|---|---|---|---|
+| **5-fold CV** | 11.26 | 10.09 | 8.63 |
+| **Purged gap CV** | 11.26 | 10.72 | 78.57 |
+| **PW-CV** | **2.28** | **6.82** | **4.88** |
+| **Rolling origin** | 12.14 | 9.15 | 11.24 |
+| **Static OOS** | 6.50 | 10.02 | **5.85** |
+
+*Purged gap CV degrades severely at $h = 6$ (78.57%) due to excessive training sample attrition after purging. PW-CV retains all observations and performs competitively.*
+
+**4. Continuous Joint Selection J<sub>λ</sub>** (Table 9):  
+Setting $\lambda = 0$ reproduces the paper's standard CV selection (out-set RMSE 2.558). Intermediate penalties $\lambda \in [0.1, 0.25]$ favor simpler models with higher out-set error (3.843), while $\lambda = 0.5$ identifies a configuration with RMSE 2.543.
+
+## How to run the code
+
+**Prerequisites:** R ($\ge$ 4.0) with `nnet`, `rmarkdown`, and `knitr`.
 
 ```r
 install.packages(c("nnet", "rmarkdown", "knitr"))
 ```
 
-**Run it**
-
+### Option 1: Quick verification (view precomputed results)
+All generated tables are stored in `csv/`. Run the summary script:
 ```r
-# From the repo root:
-
-# 1. Full 1000-trial paper replication:
-rmarkdown::render("rmd/ATSA_project.Rmd")
-
-# 2. Report extensions, 1560-model grid, and figures:
-rmarkdown::render("rmd/analysis.Rmd", output_format = "html_document")
-
-# 3. Or run the plain script:
 source("scripts/complete_code.R")
 ```
 
-- Tables are written to `csv/` and figures to `images/`.
-- The neural-network runs are chunked and write checkpoints to a `ckpt/` folder (created on first run) so interrupted runs can resume.
-- Seeds are fixed in the code (e.g. `set.seed(123)`, `set.seed(42)`), but results can still shift slightly between R versions and platforms.
+### Option 2: Full replication from scratch
 
-## Limitations
+1. **Replicate 1,000-trial simulation study (Tables 1, 3–8):**
+   ```r
+   rmarkdown::render("rmd/ATSA_project.Rmd")
+   ```
+   *Note: Runs full 1,000 trials by default. Checkpoint files are saved to `ckpt/` to allow seamless resumption if interrupted.*
 
-- **Trial counts:** the core Monte Carlo simulation study replicates the full paper with `n_trials = 1000` (for both linear autoregressions and MLP neural networks), exactly matching the submitted course report.
-- **PW-CV is not uniformly best:** at h = 3 plain 5-fold and gap-CV beat it, and static OOS wins at h = 6.
-- **Gap-CV at h = 6 (108.92%)** reflects too little training data after purging with this setup, so treat it as an implementation artifact rather than a verdict on the method.
-- **Sunspot numbers vary slightly between result files** because separate runs used their own seeds and fold splits.
-- This is coursework: the extensions are exploratory and have not been peer reviewed.
+2. **Replicate 1,560 sunspot grid, J<sub>λ</sub>, and figures (Tables 2, 9, Figures 1–3):**
+   ```r
+   rmarkdown::render("rmd/analysis.Rmd", output_format = "html_document")
+   ```
+   *Note: Output plots are exported directly to `images/` and model tables to `csv/`.*
 
-## Reference
+## The CHRONOS-CV app
 
-Bergmeir, C., Hyndman, R. J., & Koo, B. (2018). A note on the validity of cross-validation for evaluating autoregressive time series prediction. *Computational Statistics & Data Analysis*, 120, 70–83.
+CHRONOS-CV provides an interactive interface to explore all replication tables and extension studies:
+
+| Tab | Features |
+|---|---|
+| **Studio** | Interactive visualization of fold splitting and purging for 5-fold CV, LOOCV, gap CV, and OOS |
+| **Linear** | Empirical error metrics across AR(3), MA(1), and seasonal AR(12) DGPs |
+| **Neural** | Non-linear autoregressive MLP benchmark replication |
+| **Sunspots** | Interactive parameter filter across the 1,560-architecture neural network grid |
+| **Whiteness** | In-fold residual autocorrelation diagnostics and causal pre-whitening demonstration |
+| **Arena** | Multi-horizon ($h = 1, \dots, 6$) performance benchmarks across validation schemes |
+| **Joint** | Continuous parameter exploration of the $J_\lambda$ criterion |
+
+**Accessing the app:**
+- **Live web deployment:** <https://da3041-time-series-cv.netlify.app>
+- **Local browser:** Open `index.html` directly or double-click `launch_app.bat` on Windows.
+- **Local HTTP server:** Run `python app/run_server.py` and navigate to `http://localhost:8000`.
+
+## Notes and limitations
+
+- **Two implementations of PW-CV and J<sub>λ</sub>:** `rmd/analysis.Rmd` implements the causal error-filtering and Yule–Walker rescaling derivation described in Section 4.1 of the report. `rmd/ATSA_project.Rmd` implements an alternative whitened-series benchmark used for Tables 3, 4, 7, and 8.
+- **Empirical scope:** Empirical real-data evaluations are conducted on the annual Sunspots series (1700–1988), consistent with Bergmeir et al. (2018).
+- **Coursework context:** This project was developed as academic coursework for DA 3041; the proposed extensions are exploratory heuristics.
 
 ## Team
 
+**Group 6 · DA 3041: Applied Time Series Analysis · IIT Guwahati**
 
-**Group 6 · DA 3041: Applied Time Series Analysis**
-
-| Name | Roll no. |
+| Name | Roll No. |
 |---|---|
 | Nansy Veronika | 240150020 |
 | Nayakwadi Saharshini | 240150021 |
 | Sunkari Sharanya | 240150036 |
 | Yendluri Yasaswi | 240150040 |
 
-This project is a replication and extension of the paper above. The paper and its ideas belong to Bergmeir, Hyndman & Koo; our contribution is the replication code, the three extensions and the app.
+## Reference
+
+Bergmeir, C., Hyndman, R. J., & Koo, B. (2018). A note on the validity of cross-validation for evaluating autoregressive time series prediction. *Computational Statistics & Data Analysis*, 120, 70–83.
