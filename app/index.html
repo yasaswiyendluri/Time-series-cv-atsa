@@ -46,7 +46,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.1">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-x-hidden selection:bg-indigo-500 selection:text-white">
 
@@ -209,13 +209,13 @@
 
         <!-- Metrics & Feedback Banner -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          <div class="glass-panel p-3.5 flex items-center justify-between">
-            <div>
+          <div class="glass-panel p-3.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
+            <div class="min-w-0">
               <span class="text-xs text-slate-400 block font-medium">Training Degrees of Freedom:</span>
-              <p id="studioDataRetained" class="text-lg font-bold font-mono text-emerald-400">100% (112/112 points)</p>
+              <p id="studioDataRetained" class="text-base sm:text-lg font-bold font-mono text-emerald-400 whitespace-nowrap">100% (112/112 points)</p>
             </div>
-            <div id="studioTestStatus">
-              <span class="badge badge-emerald">Theorem 1 Holds Asymptotically</span>
+            <div id="studioTestStatus" class="shrink-0">
+              <span class="badge badge-emerald text-xs whitespace-nowrap">Theorem 1 Holds Asymptotically</span>
             </div>
           </div>
 
@@ -796,6 +796,6 @@
   </footer>
 
   <!-- Application Engine Script -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2.1"></script>
 </body>
 </html>
