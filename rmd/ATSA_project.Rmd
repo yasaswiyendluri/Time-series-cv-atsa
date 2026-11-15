@@ -1,34 +1,16 @@
 ---
-title: "DA 3021: Applied Time Series Analysis — Replication & Extensions"
-author: "Group 6 (Nancy Veronika, Nayakwadi Saharshini, Sunkari Sharanya, Yendluri Yasaswi)"
+title: "ATSA_project"
+author: "Saharshini"
 date: "2026-11-03"
 output: pdf_document
 ---
 ```{r}
-###############################################################################
-# Bergmeir, Hyndman & Koo (2018) - Replication + Extensions
-#
-# PART 0 : Settings and shared helpers
-# PART 1 : Table 1  - linear AR models                 (replication)
-# PART 2 : Table 2  - MLP neural networks              (replication)
-# PART 3 : Table 3  - yearly sunspots, 1560 configs    (replication)
-# PART 4 : Extension 1 - Pre-Whitened CV (PW-CV), h = 1
-# PART 5 : Extension 2 - Multi-horizon arena, h in {1, 2, 4, 6}
-#                        + Direct vs Recursive forecasting
-# PART 6 : Extension 3 - Joint selection criterion J_lambda
-###############################################################################
 
 library(nnet)
 options(scipen = 999)
 
-###############################################################################
-# PART 0: SETTINGS
-###############################################################################
 
-quick_test <- TRUE     # TRUE = small, fast run to check the code works
-                       # FALSE = full run (1000 trials, 1560 configs: very slow!)
-
-n_trials  <- if (quick_test) 20 else 1000   # Monte Carlo repetitions
+n_trials  <- 1000   # Monte Carlo repetitions
 n         <- 200       # series length
 in_end    <- 140       # first 140 values = in-set, last 60 = out-set
 max_lag   <- 5
@@ -690,5 +672,384 @@ cat("Paper's CV choice (Table 3) out-set RMSE:", table3$RMSE_out_set[1],
 write.csv(joint_table, "table_extension_joint_criterion.csv", row.names = FALSE)
 
 cat("\nAll done. CSV files were saved in your working directory.\n")
+```
+```{r}
+##############################################################################
+# Tables 2-9 of the extension paper, standalone (no nnet grid rerun)
+# Needs: sunspot_all_configs.csv (saved by your earlier Part 3) for Tables 2, 9
+###############################################################################
+options(scipen = 999)
+ 
+n_trials   <- 1000   # Monte Carlo repetitions (use 100 for a quick test)
+n          <- 200    # simulated series length
+in_end     <- 140    # simulated series: first 140 = in-set
+max_lag    <- 5
+n_folds    <- 5
+lb_lag     <- 20
+alpha      <- 0.05
+ 
+x_sun      <- as.numeric(sunspot.year)
+y_sun      <- 2 * (sqrt(1 + x_sun) - 1)       # Tong transform
+in_end_sun <- length(y_sun) - 86              # in-set = first 203 values
+ 
+###############################################################################
+# HELPERS (copied from your script, plus a few new ones)
+###############################################################################
+rmse <- function(actual, predicted) {
+  valid <- !is.na(actual) & !is.na(predicted)
+  if (sum(valid) == 0) return(NA_real_)
+  sqrt(mean((actual[valid] - predicted[valid])^2))
+}
+ 
+make_formula <- function(order) reformulate(paste0("lag_", 1:order), response = "target")
+ 
+# h-step table: lag_1 = value at forecast origin, target = value h steps later
+make_multistep <- function(y, h, p) {
+  t_end <- length(y) - h
+  m <- embed(y[1:t_end], p)
+  df <- data.frame(target = y[(p + h):(t_end + h)], m)
+  colnames(df) <- c("target", paste0("lag_", 1:p))
+  df$time <- (p + h):(t_end + h)
+  df
+}
+ 
+fit_predict_lm <- function(train_df, test_df, order) {
+  if (nrow(train_df) <= order + 1) return(rep(NA_real_, nrow(test_df)))
+  fit <- lm(make_formula(order), data = train_df)
+  suppressWarnings(as.numeric(predict(fit, newdata = test_df)))
+}
+ 
+# Random stationary AR(3) series (as in your Part 0)
+random_ar3 <- function(r_max = 5) {
+  roots <- runif(3, 1.1, r_max) * sample(c(-1, 1), 3, replace = TRUE)
+  p <- 1
+  for (r in roots) p <- c(p, 0) - c(0, p) / r
+  -p[-1]
+}
+make_ar3_series <- function() {
+  burn <- 100
+  y <- as.numeric(arima.sim(list(ar = random_ar3()), n = n + burn))[-(1:burn)]
+  y - min(y) + 1
+}
+ 
+# ---------- pre-whitening ----------
+fit_whitener <- function(values, order_max = 10) {
+  fit <- ar(values, aic = TRUE, order.max = order_max, method = "burg")
+  list(phi = fit$ar, mu = fit$x.mean)
+}
+whiten_series <- function(y, phi, mu) {
+  P <- length(phi)
+  if (P == 0) return(y - mu)
+  z <- rep(NA_real_, length(y))
+  for (t in (P + 1):length(y)) z[t] <- (y[t] - mu) - sum(phi * (y[(t - 1):(t - P)] - mu))
+  z
+}
+pw_cv <- function(y, h, order, p_max, in_end_t, folds) {
+  df_y    <- make_multistep(y, h, p_max)
+  in_rows <- which(df_y$time <= in_end_t)
+  resid   <- rep(NA_real_, length(in_rows))
+  for (k in 1:n_folds) {
+    te <- which(folds == k)
+    tr <- which(folds != k)
+    w    <- fit_whitener(df_y$target[in_rows[tr]])
+    z    <- whiten_series(y, w$phi, w$mu)
+    df_z <- make_multistep(z, h, p_max)[in_rows, ]
+    pred <- fit_predict_lm(df_z[tr, ], df_z[te, ], order)
+    resid[te] <- df_z$target[te] - pred
+  }
+  list(resid = resid, rmse = sqrt(mean(resid^2, na.rm = TRUE)))
+}
+pw_true <- function(y, h, order, p_max, in_end_t) {
+  df_y   <- make_multistep(y, h, p_max)
+  in_idx <- df_y$time <= in_end_t
+  w      <- fit_whitener(df_y$target[in_idx])
+  z      <- whiten_series(y, w$phi, w$mu)
+  df_z   <- make_multistep(z, h, p_max)
+  pred   <- fit_predict_lm(df_z[in_idx, ], df_z[!in_idx, ], order)
+  rmse(df_z$target[!in_idx], pred)
+}
+ 
+ljung_box <- function(resid, lag = lb_lag) {
+  r <- resid[!is.na(resid)]
+  b <- Box.test(r, lag = lag, type = "Ljung-Box")
+  c(Q = unname(b$statistic), p = b$p.value)
+}
+lag1_acf <- function(resid) {
+  r <- resid[!is.na(resid)]
+  acf(r, lag.max = 1, plot = FALSE)$acf[2]
+}
+ 
+# ---------- the CV-type estimators ----------
+# 5-fold CV. gap = 0 -> ordinary CV.
+# gap = g -> drop training rows with |time difference| <= g (Gap / Purged CV)
+cv_est <- function(df, order, folds, gap = 0) {
+  pred <- rep(NA_real_, nrow(df))
+  kept <- numeric(n_folds)
+  for (k in 1:n_folds) {
+    te <- which(folds == k)
+    tr <- which(folds != k)
+    n_before <- length(tr)
+    if (gap > 0) {
+      too_close <- sapply(tr, function(i) any(abs(df$time[i] - df$time[te]) <= gap))
+      tr <- tr[!too_close]
+    }
+    kept[k] <- length(tr) / n_before
+    pred[te] <- fit_predict_lm(df[tr, ], df[te, ], order)
+  }
+  list(pred = pred, rmse = rmse(df$target, pred), kept = mean(kept))
+}
+ 
+# Rolling origin: for every row in the second half, train only on rows whose
+# target was already known at that row's forecast origin, then predict it.
+rolling_est <- function(df, order, h, start_frac = 0.5) {
+  N <- nrow(df)
+  first <- ceiling(start_frac * N) + 1
+  pred <- rep(NA_real_, N)
+  for (i in first:N) {
+    tr <- df[df$time <= df$time[i] - h, ]
+    pred[i] <- fit_predict_lm(tr, df[i, , drop = FALSE], order)
+  }
+  rmse(df$target[first:N], pred[first:N])
+}
+ 
+# Static OOS: last 20% of the in-set is the test set; training stops h steps
+# before the first test target.
+oos_est <- function(df, order, h) {
+  N <- nrow(df)
+  n_test <- round(0.20 * N)
+  te <- df[(N - n_test + 1):N, ]
+  tr <- df[df$time <= min(te$time) - h, ]
+  rmse(te$target, fit_predict_lm(tr, te, order))
+}
+ 
+# Recursive forecasting: one 1-step model, iterated h times
+recursive_predict <- function(onestep_train, test_df, order, h) {
+  if (nrow(onestep_train) <= order + 1) return(rep(NA_real_, nrow(test_df)))
+  fit <- lm(make_formula(order), data = onestep_train)
+  b <- coef(fit); b[is.na(b)] <- 0
+  lags <- as.matrix(test_df[, paste0("lag_", 1:order), drop = FALSE])
+  for (step in 1:h) {
+    nxt  <- b[1] + lags %*% b[-1]
+    lags <- cbind(nxt, lags[, -order, drop = FALSE])
+  }
+  as.numeric(nxt)
+}
+ 
+###############################################################################
+# TABLES 2 and 9: from the saved sunspot grid (no rerun)
+###############################################################################
+cat("\n===== TABLE 2 and TABLE 9 =====\n")
+if (exists("res3")) {
+  grid <- res3
+} else {
+  if (!file.exists("sunspot_all_configs.csv"))
+    stop("sunspot_all_configs.csv not found in the working directory")
+  grid <- read.csv("sunspot_all_configs.csv")
+}
+ 
+passed   <- grid[!is.na(grid$lb_p) & grid$lb_p > alpha, ]
+best_cv  <- passed[which.min(passed$cv_rmse), ]
+best_oos <- passed[which.min(passed$oos_rmse), ]
+ 
+cat("Settings total:", nrow(grid), "| passing Ljung-Box:", nrow(passed), "\n")
+table2 <- data.frame(
+  Chosen_by = c("CV", "OOS"),
+  p     = c(best_cv$p,     best_oos$p),
+  size  = c(best_cv$size,  best_oos$size),
+  decay = c(best_cv$decay, best_oos$decay),
+  CV    = round(c(best_cv$cv_rmse,  best_oos$cv_rmse), 3),
+  OOS   = round(c(best_cv$oos_rmse, best_oos$oos_rmse), 3),
+  Out_set = round(c(best_cv$out_rmse, best_oos$out_rmse), 3))
+cat("\n--- Table 2 ---\n"); print(table2, row.names = FALSE)
+write.csv(table2, "paper_table2.csv", row.names = FALSE)
+ 
+# Table 9: J_lambda = CV_RMSE + lambda * max(0, -log10(p_LB) - 1.301)
+ok      <- grid[!is.na(grid$cv_rmse) & !is.na(grid$lb_p), ]
+penalty <- pmax(0, -log10(pmax(ok$lb_p, 1e-300)) - 1.301)
+pick <- function(row, label) data.frame(
+  Criterion = label, p = row$p, size = row$size, decay = row$decay,
+  CV = round(row$cv_rmse, 3), p_LB = round(row$lb_p, 3),
+  Out_set = round(row$out_rmse, 3))
+ 
+rows9 <- list()
+for (lam in c(0, 0.1, 0.25, 0.5, 1, 2)) {
+  J <- ok$cv_rmse + lam * penalty
+  rows9[[length(rows9) + 1]] <- pick(ok[which.min(J), ], paste0("lambda = ", lam))
+}
+rows9[[length(rows9) + 1]] <- pick(best_cv,  "Ljung-Box filter")
+rows9[[length(rows9) + 1]] <- pick(best_oos, "OOS")
+table9 <- do.call(rbind, rows9)
+cat("\n--- Table 9 ---\n"); print(table9, row.names = FALSE)
+write.csv(table9, "paper_table9.csv", row.names = FALSE)
+ 
+###############################################################################
+# TABLES 3 and 4: pre-whitened CV, h = 1, AR(1) model
+# Series 1: one simulated ARMA(1,1) (my assumption: ar = 0.7, ma = 0.4)
+# Series 2: sunspots
+###############################################################################
+cat("\n===== TABLES 3 and 4 =====\n")
+set.seed(42)
+ 
+pw_demo <- function(y, in_end_t, label, order = 1, gap = 3, p_max = 10) {
+  df    <- make_multistep(y, 1, p_max)
+  in_s  <- df[df$time <= in_end_t, ]
+  folds <- sample(rep(1:n_folds, length.out = nrow(in_s)))
+  std <- cv_est(in_s, order, folds)
+  gp  <- cv_est(in_s, order, folds, gap = gap)
+  pw  <- pw_cv(y, 1, order, p_max, in_end_t, folds)
+  lb_raw <- ljung_box(in_s$target - std$pred)
+  lb_pw  <- ljung_box(pw$resid)
+  list(
+    t3 = data.frame(Series = label,
+                    Method = c("5-fold CV", paste0("Gap CV (gap = ", gap, ")"), "PW-CV"),
+                    RMSE = round(c(std$rmse, gp$rmse, pw$rmse), 3),
+                    Rows_kept_pct = round(100 * c(1, gp$kept, 1), 1)),
+    t4 = data.frame(Series = label,
+                    Raw_Q = round(lb_raw["Q"], 2), Raw_p = round(lb_raw["p"], 3),
+                    Raw_rho1 = round(lag1_acf(in_s$target - std$pred), 3),
+                    White_Q = round(lb_pw["Q"], 2), White_p = round(lb_pw["p"], 3),
+                    White_rho1 = round(lag1_acf(pw$resid), 3)))
+}
+ 
+y_arma <- as.numeric(arima.sim(list(ar = 0.7, ma = 0.4), n = n))
+a <- pw_demo(y_arma, in_end,     "Simulated ARMA")
+b <- pw_demo(y_sun,  in_end_sun, "Sunspots, AR(1)")
+table3 <- rbind(a$t3, b$t3)
+table4 <- rbind(a$t4, b$t4)
+cat("\n--- Table 3 ---\n"); print(table3, row.names = FALSE)
+cat("\n--- Table 4 ---\n"); print(table4, row.names = FALSE)
+write.csv(table3, "paper_table3.csv", row.names = FALSE)
+write.csv(table4, "paper_table4.csv", row.names = FALSE)
+ 
+###############################################################################
+# TABLES 5, 6, 7: Monte Carlo, AR(3) data, AR(3) model, h = 1, 2, 4
+# One loop gives all three. For every trial and horizon we store each method's
+# CV estimate and the "true" out-set RMSE it is compared with.
+###############################################################################
+cat("\n===== TABLES 5, 6, 7 (Monte Carlo, can take a while) =====\n")
+set.seed(42)
+horizons <- c(1, 2, 4)
+mc <- list()
+ 
+for (trial in 1:n_trials) {
+  y    <- make_ar3_series()
+  os   <- make_multistep(y, 1, max_lag)          # 1-step table for recursion
+  os_in <- os[os$time <= in_end, ]
+ 
+  for (h in horizons) {
+    df    <- make_multistep(y, h, max_lag)
+    in_s  <- df[df$time <= in_end, ]
+    out_s <- df[df$time >  in_end, ]
+    folds <- sample(rep(1:n_folds, length.out = nrow(in_s)))
+ 
+    true_raw <- rmse(out_s$target, fit_predict_lm(in_s, out_s, 3))
+    true_pw  <- pw_true(y, h, 3, max_lag, in_end)
+    true_rec <- rmse(out_s$target, recursive_predict(os_in, out_s, 3, h))
+ 
+    # recursive 5-fold CV
+    r_pred <- rep(NA_real_, nrow(in_s))
+    for (k in 1:n_folds) {
+      te <- which(folds == k)
+      tr <- which(folds != k)
+      train_origins <- in_s$time[tr] - h
+      os_tr <- os_in[(os_in$time - 1) %in% train_origins, ]
+      r_pred[te] <- recursive_predict(os_tr, in_s[te, ], 3, h)
+    }
+ 
+    est <- c("5-fold CV"      = cv_est(in_s, 3, folds)$rmse,
+             "Purged Gap-CV"  = cv_est(in_s, 3, folds, gap = h - 1)$rmse,
+             "PW-CV"          = pw_cv(y, h, 3, max_lag, in_end, folds)$rmse,
+             "Rolling-Origin" = rolling_est(in_s, 3, h),
+             "Static OOS"     = oos_est(in_s, 3, h),
+             "Recursive CV"   = rmse(in_s$target, r_pred))
+    tru <- c(true_raw, true_raw, true_pw, true_raw, true_raw, true_rec)
+ 
+    mc[[length(mc) + 1]] <- data.frame(h = h, method = names(est),
+                                       est = unname(est), true = tru)
+  }
+  if (trial %% 100 == 0) cat("trial", trial, "of", n_trials, "\n")
+}
+mc_df <- do.call(rbind, mc)
+ 
+groups <- unique(mc_df[, c("h", "method")])
+mc_sum <- do.call(rbind, lapply(seq_len(nrow(groups)), function(i) {
+  d <- mc_df[mc_df$h == groups$h[i] & mc_df$method == groups$method[i], ]
+  cbind(groups[i, ],
+        MAPAE     = mean(abs(d$est - d$true), na.rm = TRUE),
+        MPAE      = mean(d$est - d$true,      na.rm = TRUE),
+        MAPAE_pct = mean(abs(d$est - d$true) / d$true * 100, na.rm = TRUE))
+}))
+ 
+make_wide <- function(sm, methods, cols, digits) {
+  res <- data.frame(Method = methods)
+  for (h in horizons) for (cl in cols)
+    res[[paste0("h", h, "_", cl)]] <- unname(sapply(methods, function(m)
+      round(sm[sm$h == h & sm$method == m, cl], digits)))
+  res
+}
+ 
+# Table 5 (RMSE units)
+table5 <- make_wide(mc_sum, c("5-fold CV", "Purged Gap-CV", "Rolling-Origin", "Static OOS"),
+                    c("MAPAE", "MPAE"), 3)
+cat("\n--- Table 5 ---\n"); print(table5, row.names = FALSE)
+write.csv(table5, "paper_table5.csv", row.names = FALSE)
+ 
+# Table 6: direct (= 5-fold CV) vs recursive
+d6 <- mc_sum[mc_sum$method == "5-fold CV", ]
+r6 <- mc_sum[mc_sum$method == "Recursive CV", ]
+table6 <- data.frame(h = d6$h,
+                     Direct_MAPAE    = round(d6$MAPAE, 3),
+                     Direct_MPAE     = round(d6$MPAE, 3),
+                     Recursive_MAPAE = round(r6$MAPAE[match(d6$h, r6$h)], 3),
+                     Recursive_MPAE  = round(r6$MPAE[match(d6$h, r6$h)], 3))
+cat("\n--- Table 6 ---\n"); print(table6, row.names = FALSE)
+write.csv(table6, "paper_table6.csv", row.names = FALSE)
+ 
+# Table 7 (percent)
+table7 <- make_wide(mc_sum, c("5-fold CV", "Purged Gap-CV", "PW-CV", "Rolling-Origin", "Static OOS"),
+                    "MAPAE_pct", 2)
+cat("\n--- Table 7 ---\n"); print(table7, row.names = FALSE)
+write.csv(table7, "paper_table7.csv", row.names = FALSE)
+ 
+###############################################################################
+# TABLE 8: sunspots, mean relative gap (%) to out-set RMSE,
+# direct AR(p), p in {2, 4, 7, 10}, h in {1, 3, 6}
+###############################################################################
+cat("\n===== TABLE 8 =====\n")
+set.seed(42)
+p_max_sun <- 10
+rows8 <- list()
+for (h in c(1, 3, 6)) {
+  df    <- make_multistep(y_sun, h, p_max_sun)
+  in_s  <- df[df$time <= in_end_sun, ]
+  out_s <- df[df$time >  in_end_sun, ]
+  folds <- sample(rep(1:n_folds, length.out = nrow(in_s)))
+  for (ord in c(2, 4, 7, 10)) {
+    true_raw <- rmse(out_s$target, fit_predict_lm(in_s, out_s, ord))
+    true_pw  <- pw_true(y_sun, h, ord, p_max_sun, in_end_sun)
+    est <- c("5-Fold CV"     = cv_est(in_s, ord, folds)$rmse,
+             "Purged Gap-CV" = cv_est(in_s, ord, folds, gap = h - 1)$rmse,
+             "PW-CV"         = pw_cv(y_sun, h, ord, p_max_sun, in_end_sun, folds)$rmse,
+             "Rolling-Origin"= rolling_est(in_s, ord, h),
+             "Static OOS"    = oos_est(in_s, ord, h))
+    tru <- c(true_raw, true_raw, true_pw, true_raw, true_raw)
+    rows8[[length(rows8) + 1]] <- data.frame(
+      h = h, ord = ord, Method = names(est),
+      gap_pct = abs(unname(est) - tru) / tru * 100)
+  }
+}
+d8 <- do.call(rbind, rows8)
+methods8 <- c("5-Fold CV", "Purged Gap-CV", "PW-CV", "Rolling-Origin", "Static OOS")
+table8 <- data.frame(Method = methods8)
+for (h in c(1, 3, 6))
+  table8[[paste0("h", h)]] <- sapply(methods8, function(m)
+    round(mean(d8$gap_pct[d8$h == h & d8$Method == m], na.rm = TRUE), 2))
+rownames(table8) <- NULL
+cat("\n--- Table 8 ---\n"); print(table8, row.names = FALSE)
+write.csv(table8, "paper_table8.csv", row.names = FALSE)
+ 
+cat("\nDone. CSV files paper_table2.csv ... paper_table9.csv are in your working directory.\n")
+ 
+
 ```
 

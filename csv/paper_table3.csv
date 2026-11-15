@@ -1,0 +1,7 @@
+"Series","Method","RMSE","Rows_kept_pct"
+"Simulated ARMA","5-fold CV",0.976,100
+"Simulated ARMA","Gap CV (gap = 3)",1.014,26
+"Simulated ARMA","PW-CV",0.934,100
+"Sunspots, AR(1)","5-fold CV",3.004,100
+"Sunspots, AR(1)","Gap CV (gap = 3)",3.005,28.4
+"Sunspots, AR(1)","PW-CV",2.335,100

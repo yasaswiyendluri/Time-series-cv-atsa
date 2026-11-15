@@ -1,0 +1,6 @@
+"Method","h1_MAPAE_pct","h2_MAPAE_pct","h4_MAPAE_pct"
+"5-fold CV",9.23,10.7,12.88
+"Purged Gap-CV",9.23,11.2,17.13
+"PW-CV",9.43,11.12,13.12
+"Rolling-Origin",10.19,11.91,14.76
+"Static OOS",13.44,15.46,19.36

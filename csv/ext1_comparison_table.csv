@@ -1,4 +1,4 @@
-"Method","RMSE","MAE","Data_Retained_Pct","Theoretical_Status"
-"Ordinary 5-Fold CV",1.0506,0.8395,100,"Correlated Residuals (Violates A3)"
-"Gap-CV (gap = 3)",1.0624,0.8488,26.6,"Purged Data (Suffers Severe Data Loss)"
-"Pre-Whitened CV (PW-CV)",1.0411,0.8319,100,"Pre-Whitened (Restores A3 with 100% Data!)"
+"Method","CV_RMSE","True_RMSE","LjungBox_Q","LjungBox_p","Train_kept_pct"
+"5-fold CV",2.177,2.594,29.76,0.0738,100
+"Gap-CV",2.17,2.594,29.99,0.0699,64.8
+"PW-CV",2.233,2.194,32.41,0.0391,100
