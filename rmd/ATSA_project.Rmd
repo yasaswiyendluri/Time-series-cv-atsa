@@ -9,8 +9,8 @@ output: pdf_document
 library(nnet)
 options(scipen = 999)
 
-
-n_trials  <- 1000   # Monte Carlo repetitions
+quick_test <- FALSE     # FALSE = full 1000 run; TRUE = quick test
+n_trials  <- 1000       # Monte Carlo repetitions
 n         <- 200       # series length
 in_end    <- 140       # first 140 values = in-set, last 60 = out-set
 max_lag   <- 5

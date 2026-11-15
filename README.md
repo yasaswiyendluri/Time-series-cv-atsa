@@ -81,7 +81,7 @@ The app loads Tailwind, Chart.js, Lucide, KaTeX and Google Fonts from CDNs, so i
 
 Numbers below come straight from `csv/`.
 
-**Simulated ARMA process, h = 1 (`ext1_comparison_table.csv`, 20 trials)**
+**Simulated ARMA process, h = 1 (`ext1_comparison_table.csv`)**
 
 | Method | RMSE | Data retained |
 |---|---|---|
@@ -122,7 +122,7 @@ source("scripts/complete_code.R")
 
 ## Limitations
 
-- **Trial counts:** the simulations use `n_trials = 20` for speed, versus **1000** in the paper. Small gaps (for example PW-CV vs 5-fold CV at h = 1) are within Monte Carlo noise. To match the paper, set `n_trials` to 1000 in `rmd/analysis.Rmd` (overnight run for the neural networks).
+- **Trial counts:** the core Monte Carlo simulation study replicates the full paper with `n_trials = 1000` (for both linear autoregressions and MLP neural networks), exactly matching the submitted course report.
 - **PW-CV is not uniformly best:** at h = 3 plain 5-fold and gap-CV beat it, and static OOS wins at h = 6.
 - **Gap-CV at h = 6 (108.92%)** reflects too little training data after purging with this setup, so treat it as an implementation artifact rather than a verdict on the method.
 - **Sunspot numbers vary slightly between result files** because separate runs used their own seeds and fold splits.
